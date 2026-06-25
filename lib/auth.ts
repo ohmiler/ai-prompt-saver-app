@@ -1,9 +1,11 @@
 import "server-only";
 
-import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { createSessionToken, hashSessionToken } from "@/lib/session-token";
+
+export { createSessionToken } from "@/lib/session-token";
 
 const SESSION_DAYS = 30;
 const COOKIE_NAME = process.env.AUTH_COOKIE_NAME ?? "prompt_saver_session";
@@ -13,23 +15,21 @@ export type CurrentUser = {
   email: string;
 };
 
-export function createSessionToken() {
-  return randomBytes(32).toString("hex");
-}
-
 function sessionExpiry() {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + SESSION_DAYS);
   return expiresAt;
 }
 
+// Mutates cookies; call only from Server Actions or Route Handlers.
 export async function createSession(userId: string) {
   const token = createSessionToken();
+  const tokenDigest = hashSessionToken(token);
   const expiresAt = sessionExpiry();
 
   await prisma.session.create({
     data: {
-      token,
+      token: tokenDigest,
       userId,
       expiresAt,
     },
@@ -53,14 +53,15 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     return null;
   }
 
+  const tokenDigest = hashSessionToken(token);
   const session = await prisma.session.findUnique({
-    where: { token },
+    where: { token: tokenDigest },
     include: { user: true },
   });
 
   if (!session || session.expiresAt <= new Date()) {
     if (session) {
-      await prisma.session.delete({ where: { id: session.id } });
+      await prisma.session.deleteMany({ where: { id: session.id } });
     }
     return null;
   }
@@ -81,12 +82,15 @@ export async function requireUser() {
   return user;
 }
 
+// Mutates cookies; call only from Server Actions or Route Handlers.
 export async function clearSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
 
   if (token) {
-    await prisma.session.deleteMany({ where: { token } });
+    await prisma.session.deleteMany({
+      where: { token: hashSessionToken(token) },
+    });
   }
 
   cookieStore.delete(COOKIE_NAME);
