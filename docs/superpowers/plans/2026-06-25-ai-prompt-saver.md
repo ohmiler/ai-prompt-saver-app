@@ -61,7 +61,7 @@ Expected: npm installs packages and updates `package.json` and `package-lock.jso
 Run:
 
 ```powershell
-npm.cmd install -D prisma vitest tsx @types/bcryptjs
+npm.cmd install -D prisma vitest tsx
 ```
 
 Expected: npm installs packages and updates `package.json` and `package-lock.json`.
