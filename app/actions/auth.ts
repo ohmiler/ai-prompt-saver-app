@@ -11,8 +11,6 @@ export type AuthActionState = {
   message: string;
 };
 
-const initialError = { message: "" };
-
 export async function registerAction(
   _state: AuthActionState,
   formData: FormData,
@@ -26,15 +24,15 @@ export async function registerAction(
     return { message: input.message };
   }
 
+  let user;
+
   try {
-    const user = await prisma.user.create({
+    user = await prisma.user.create({
       data: {
         email: input.value.email,
         passwordHash: await hashPassword(input.value.password),
       },
     });
-
-    await createSession(user.id);
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -46,6 +44,7 @@ export async function registerAction(
     return { message: "Could not create account. Please try again." };
   }
 
+  await createSession(user.id);
   redirect("/");
 }
 
@@ -87,5 +86,3 @@ export async function logoutAction() {
   await clearSession();
   redirect("/login");
 }
-
-export const emptyAuthState = initialError;

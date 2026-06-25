@@ -13,6 +13,7 @@ type AuthFormProps = {
   footerLabel: string;
   footerHref: string;
   footerLink: string;
+  passwordAutoComplete: "current-password" | "new-password";
 };
 
 const initialState: AuthActionState = { message: "" };
@@ -23,6 +24,7 @@ export function AuthForm({
   footerLabel,
   footerHref,
   footerLink,
+  passwordAutoComplete,
 }: AuthFormProps) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -34,7 +36,13 @@ export function AuthForm({
       </label>
       <label>
         Password
-        <input name="password" type="password" minLength={8} required />
+        <input
+          name="password"
+          type="password"
+          autoComplete={passwordAutoComplete}
+          minLength={8}
+          required
+        />
       </label>
       {state.message ? (
         <p className="form-error" role="alert">

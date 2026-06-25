@@ -21,6 +21,7 @@ export default async function RegisterPage() {
           footerLabel="Already have an account?"
           footerHref="/login"
           footerLink="Log in"
+          passwordAutoComplete="new-password"
         />
       </section>
     </main>
