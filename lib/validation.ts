@@ -1,4 +1,4 @@
-import { isPromptCategory, type PromptCategory } from "./categories";
+import { isPromptCategory, type PromptCategory } from "@/lib/categories";
 
 type Result<T> =
   | { ok: true; value: T }

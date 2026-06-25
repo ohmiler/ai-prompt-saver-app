@@ -4,7 +4,7 @@ import {
   validateLoginInput,
   validatePromptInput,
   validateRegisterInput,
-} from "../lib/validation";
+} from "@/lib/validation";
 
 describe("validation", () => {
   it("normalizes email", () => {
