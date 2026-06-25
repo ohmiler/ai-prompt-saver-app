@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local brainstorming companion sessions
+.superpowers/
+
+# local git worktrees
+.worktrees/
+
+# local sqlite database
+prisma/dev.db
