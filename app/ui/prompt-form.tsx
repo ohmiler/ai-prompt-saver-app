@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import {
   createPromptAction,
   type PromptActionState,
@@ -18,16 +18,39 @@ type PromptFormProps = {
   onDone?: () => void;
 };
 
-const initialState: PromptActionState = { message: "" };
+const initialState: PromptActionState = {
+  message: "",
+  success: false,
+  version: 0,
+};
 
 export function PromptForm({ prompt, onDone }: PromptFormProps) {
   const action = prompt
     ? updatePromptAction.bind(null, prompt.id)
     : createPromptAction;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!state.success) {
+      return;
+    }
+
+    if (prompt) {
+      onDone?.();
+      return;
+    }
+
+    formRef.current?.reset();
+  }, [onDone, prompt, state.success, state.version]);
 
   return (
-    <form action={formAction} className="prompt-form">
+    <form
+      action={formAction}
+      aria-label={prompt ? "Edit prompt" : "Add prompt"}
+      className="prompt-form"
+      ref={formRef}
+    >
       <div className="form-heading">
         <h2>{prompt ? "Edit prompt" : "Add prompt"}</h2>
         {prompt ? (

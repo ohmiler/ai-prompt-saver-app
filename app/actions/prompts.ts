@@ -7,13 +7,20 @@ import { validatePromptInput } from "@/lib/validation";
 
 export type PromptActionState = {
   message: string;
+  success: boolean;
+  version: number;
 };
 
+function currentVersion(state: PromptActionState) {
+  return Number.isFinite(state.version) ? state.version : 0;
+}
+
 export async function createPromptAction(
-  _state: PromptActionState,
+  state: PromptActionState,
   formData: FormData,
 ): Promise<PromptActionState> {
   const user = await requireUser();
+  const version = currentVersion(state);
   const input = validatePromptInput({
     title: formData.get("title"),
     content: formData.get("content"),
@@ -21,7 +28,7 @@ export async function createPromptAction(
   });
 
   if (!input.ok) {
-    return { message: input.message };
+    return { message: input.message, success: false, version };
   }
 
   await prisma.prompt.create({
@@ -32,15 +39,16 @@ export async function createPromptAction(
   });
 
   revalidatePath("/");
-  return { message: "" };
+  return { message: "", success: true, version: version + 1 };
 }
 
 export async function updatePromptAction(
   promptId: string,
-  _state: PromptActionState,
+  state: PromptActionState,
   formData: FormData,
 ): Promise<PromptActionState> {
   const user = await requireUser();
+  const version = currentVersion(state);
   const input = validatePromptInput({
     title: formData.get("title"),
     content: formData.get("content"),
@@ -48,7 +56,7 @@ export async function updatePromptAction(
   });
 
   if (!input.ok) {
-    return { message: input.message };
+    return { message: input.message, success: false, version };
   }
 
   const result = await prisma.prompt.updateMany({
@@ -60,11 +68,15 @@ export async function updatePromptAction(
   });
 
   if (result.count === 0) {
-    return { message: "Prompt not found." };
+    return {
+      message: "Prompt not found.",
+      success: false,
+      version,
+    };
   }
 
   revalidatePath("/");
-  return { message: "" };
+  return { message: "", success: true, version: version + 1 };
 }
 
 export async function deletePromptAction(formData: FormData) {

@@ -5,6 +5,7 @@ const updateManyMock = vi.fn();
 const deleteManyMock = vi.fn();
 const requireUserMock = vi.fn();
 const revalidatePathMock = vi.fn();
+const promptState = { message: "", success: false, version: 0 };
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -42,8 +43,8 @@ describe("prompt actions", () => {
     formData.set("category", "Coding");
 
     await expect(
-      createPromptAction({ message: "" }, formData),
-    ).resolves.toEqual({ message: "" });
+      createPromptAction(promptState, formData),
+    ).resolves.toEqual({ message: "", success: true, version: 1 });
 
     expect(createMock).toHaveBeenCalledWith({
       data: {
@@ -64,8 +65,12 @@ describe("prompt actions", () => {
     formData.set("category", "Coding");
 
     await expect(
-      createPromptAction({ message: "" }, formData),
-    ).resolves.toEqual({ message: "Title and content are required." });
+      createPromptAction(promptState, formData),
+    ).resolves.toEqual({
+      message: "Title and content are required.",
+      success: false,
+      version: 0,
+    });
 
     expect(createMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
@@ -80,8 +85,8 @@ describe("prompt actions", () => {
     formData.set("category", "Writing");
 
     await expect(
-      updatePromptAction("prompt_1", { message: "" }, formData),
-    ).resolves.toEqual({ message: "" });
+      updatePromptAction("prompt_1", promptState, formData),
+    ).resolves.toEqual({ message: "", success: true, version: 1 });
 
     expect(updateManyMock).toHaveBeenCalledWith({
       where: {
@@ -106,8 +111,12 @@ describe("prompt actions", () => {
     formData.set("category", "Writing");
 
     await expect(
-      updatePromptAction("prompt_1", { message: "" }, formData),
-    ).resolves.toEqual({ message: "Prompt not found." });
+      updatePromptAction("prompt_1", promptState, formData),
+    ).resolves.toEqual({
+      message: "Prompt not found.",
+      success: false,
+      version: 0,
+    });
 
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
