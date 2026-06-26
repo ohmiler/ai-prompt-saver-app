@@ -4,12 +4,18 @@ import { redirect } from "next/navigation";
 import { clearSession, createSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { isPrismaUniqueConstraintError } from "@/lib/prisma-errors";
+import {
+  isPrismaInitializationError,
+  isPrismaUniqueConstraintError,
+} from "@/lib/prisma-errors";
 import { validateLoginInput, validateRegisterInput } from "@/lib/validation";
 
 export type AuthActionState = {
   message: string;
 };
+
+const databaseErrorMessage =
+  "Could not connect to the database. Please try again later.";
 
 export async function registerAction(
   _state: AuthActionState,
@@ -33,15 +39,20 @@ export async function registerAction(
         passwordHash: await hashPassword(input.value.password),
       },
     });
+
+    await createSession(user.id);
   } catch (error) {
     if (isPrismaUniqueConstraintError(error)) {
       return { message: "An account with this email already exists." };
     }
 
+    if (isPrismaInitializationError(error)) {
+      return { message: databaseErrorMessage };
+    }
+
     return { message: "Could not create account. Please try again." };
   }
 
-  await createSession(user.id);
   redirect("/");
 }
 
@@ -58,24 +69,33 @@ export async function loginAction(
     return { message: input.message };
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: input.value.email },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: input.value.email },
+    });
 
-  if (!user) {
-    return { message: "Invalid email or password." };
+    if (!user) {
+      return { message: "Invalid email or password." };
+    }
+
+    const passwordValid = await verifyPassword(
+      input.value.password,
+      user.passwordHash,
+    );
+
+    if (!passwordValid) {
+      return { message: "Invalid email or password." };
+    }
+
+    await createSession(user.id);
+  } catch (error) {
+    if (isPrismaInitializationError(error)) {
+      return { message: databaseErrorMessage };
+    }
+
+    return { message: "Could not log in. Please try again." };
   }
 
-  const passwordValid = await verifyPassword(
-    input.value.password,
-    user.passwordHash,
-  );
-
-  if (!passwordValid) {
-    return { message: "Invalid email or password." };
-  }
-
-  await createSession(user.id);
   redirect("/");
 }
 

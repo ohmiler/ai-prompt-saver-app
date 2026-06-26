@@ -44,14 +44,14 @@ export function AuthForm({
           required
         />
       </label>
+      <button type="submit" disabled={pending}>
+        {pending ? "Working..." : buttonLabel}
+      </button>
       {state.message ? (
         <p className="form-error" role="alert">
           {state.message}
         </p>
       ) : null}
-      <button type="submit" disabled={pending}>
-        {pending ? "Working..." : buttonLabel}
-      </button>
       <p className="auth-footer">
         {footerLabel} <Link href={footerHref}>{footerLink}</Link>
       </p>
