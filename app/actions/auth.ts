@@ -1,10 +1,10 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { clearSession, createSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { isPrismaUniqueConstraintError } from "@/lib/prisma-errors";
 import { validateLoginInput, validateRegisterInput } from "@/lib/validation";
 
 export type AuthActionState = {
@@ -34,10 +34,7 @@ export async function registerAction(
       },
     });
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (isPrismaUniqueConstraintError(error)) {
       return { message: "An account with this email already exists." };
     }
 
